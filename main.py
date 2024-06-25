@@ -48,8 +48,10 @@ async def hello(ctx, name: str = None):
 @bot.command(name="유저추가")
 async def add(ctx, name: str, id: str):
     conn, cur = connection.get_connection()
-    sql = f'INSERT INTO userinfo ({id}, {name})'
-    cur.execute(sql, ctx.author.id)
+    sql = 'INSERT INTO userinfo (user_id, user_name) VALUES (%s, %s);'
+    cur.execute(sql, (id, name))
+    conn.commit()
+    conn.close
 
     await ctx.respond(f"[알림] DB에 {name}을(를) 추가했습니다.")
 
@@ -57,9 +59,15 @@ async def add(ctx, name: str, id: str):
 @bot.command(name="지급")
 async def give(ctx, name: str, cnt: int):
     conn, cur = connection.get_connection()
-    sql = f'SELECT * FROM userinfo WHERE user_name = {name}'
-    cur.execute(sql, ctx.author.id)
+    sql = 'SELECT * FROM userinfo WHERE user_name = %s'
+    cur.execute(sql, name)
     result = cur.fetchone()
+
+    user_id = result['user_id']
+    sql = 'SELECT * FROM nyanbit WHERE user_id = %s'
+    cur.execute(sql, user_id)
+    result = cur.fetchone()
+
     print(result)
 
     await ctx.respond(f"{name}에게 {cnt}개를 지급했습니다.")
