@@ -75,6 +75,10 @@ async def add(ctx, member: discord.Member):
 
 
 @bot.hybrid_command(name="지급", description="member에게 nyanbit를 cnt개 지급합니다.")
+@app_commands.describe(
+    member='지급할 유저를 선택해주세요.',
+    cnt='지급할 개수를 적어주세요. (0이상의 정수만 가능)',
+)
 async def give(ctx, member: discord.Member, cnt: int):
     """
     등록되지 않은 유저를 추가합니다.\n
