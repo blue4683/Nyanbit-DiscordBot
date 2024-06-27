@@ -3,7 +3,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import os
-import random
+import pymysql
+from typing import Optional
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -11,8 +12,7 @@ CHANNEL_ID = os.getenv("CHANNEL_ID")
 APPLICATION_ID = os.getenv("APPLICATION_ID")
 
 description = """
-An example bot to showcase the discord.ext.commands extension module.
-There are a number of utility commands being showcased here.
+Test bot for myself.
 """
 
 connection = db.Connection()
@@ -33,12 +33,6 @@ async def on_ready():
     print("------")
 
 
-@bot.command(description="For when you wanna settle the score some other way")
-async def choose(ctx: commands.Context, *choices: str):
-    """Chooses between multiple choices."""
-    await ctx.send(random.choice(choices))
-
-
 @bot.command(name="hello")
 async def hello(ctx, name: str = None):
     name = name or ctx.author.name
@@ -46,14 +40,30 @@ async def hello(ctx, name: str = None):
 
 
 @bot.command(name="유저추가")
-async def add(ctx, name: str, id: str):
-    conn, cur = connection.get_connection()
-    sql = 'INSERT INTO userinfo (user_id, user_name) VALUES (%s, %s);'
-    cur.execute(sql, (id, name))
-    conn.commit()
-    conn.close
+async def add(ctx, member: Optional[discord.Member]):
+    try:
+        conn, cur = connection.get_connection()
 
-    await ctx.respond(f"[알림] DB에 {name}을(를) 추가했습니다.")
+    except:
+        print(f"[알림] DB와의 연결에 실패했습니다.")
+        await ctx.respond(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+
+    sql = '''
+    INSERT INTO userinfo (user_id, user_name) VALUES (%s, %s);
+    INSERT INTO nyanbit (user_id, nyanbit_cnt) VALUES (%s, %s);
+    '''
+
+    try:
+        cur.execute(sql, (member.name, member.display_name, member.name, 0))
+        conn.commit()
+        conn.close
+
+        await ctx.respond(f"[알림] DB에 {member.display_name}님을 추가했습니다.")
+
+    except pymysql.err.IntegrityError as error:
+        print(error)
+
+        await ctx.respond(f"[알림] {member.display_name}님은 DB에 이미 추가된 유저입니다.")
 
 
 @bot.command(name="지급")

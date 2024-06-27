@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import pymysql
 import pymysql.cursors
+from pymysql.constants import CLIENT
 
 load_dotenv()
 USERID = os.getenv("USERID")
@@ -18,7 +19,7 @@ class Connection:
         self.charset = 'utf8'
         self.conn = pymysql.connect(
             host=self.host, user=self.user, password=self.password,
-            db=self.db, port=self.port, charset=self.charset)
+            db=self.db, port=self.port, charset=self.charset, client_flag=CLIENT.MULTI_STATEMENTS)
         self.cur = self.conn.cursor(pymysql.cursors.DictCursor)
         print('[알림] DB와 성공적으로 연결되었습니다.')
 
