@@ -8,7 +8,7 @@
 
 ## Process
 
-- [에러 처리](docs/error_handling.md)
+- [에러 처리](docs/troubleshooting.md)
 - [개선](docs/revision.md)
 
 ## Skills

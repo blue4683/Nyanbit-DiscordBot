@@ -2,6 +2,40 @@
 
 ## Discord
 
+```bash
+discord.errors.HTTPException: 400 Bad Request (error code: 50035): Invalid Form Body
+In 1.options.1: Required options must be placed before non-required options
+```
+
+- 필수로 입력되어야 하는 인자는 그렇지 않은 인자보다 먼저 정의되어야한다는 오류이다.
+- 문제의 원인은 다음 코드에서 발견할 수 있었다.
+
+```python
+async def give(ctx, member: Optional[discord.Member], cnt: int):
+```
+
+- `cnt`를 `member` 앞으로 정의해주니 문제는 해결되었다. 하지만 `member`가 필수로 입력되어야 하는 인자이기 때문에 확인해볼 필요가 있었다.
+- `Optional`이라는 클래스가 옵션을 선택하게 만들어주는 용도인줄 알았으나 직접 확인해보니 다음과 같은 설명이 있었다.
+
+```python
+@_SpecialForm
+def Optional(self, parameters):
+    """Optional type.
+
+    Optional[X] is equivalent to Union[X, None].
+    """
+    arg = _type_check(parameters, f"{self} requires a single type.")
+    return Union[arg, type(None)]
+```
+
+- `Optional[X]`는 `Union[X, None]`과 같다 == `Optional`은 `None`을 허용한다 == 입력이 필요없는 인자다.
+- `Optional`을 제거해도 슬래시 명령어에서 똑같이 멤버를 선택해서 입력할 수 있었다.
+- 수정한 코드는 다음과 같다.
+
+```python
+async def give(ctx, member: discord.Member, cnt: int):
+```
+
 ## DB
 
 ### Pymysql
