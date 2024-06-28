@@ -1,10 +1,10 @@
 import db
 import discord
+from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 import os
 import pymysql
-from typing import Optional
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -21,7 +21,8 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
-bot = discord.Bot(
+bot = commands.Bot(
+    command_prefix='/',
     description=description,
     intents=intents,
 )
@@ -33,20 +34,38 @@ async def on_ready():
     print("------")
 
 
-@bot.command(name="hello")
-async def hello(ctx, name: str = None):
-    name = name or ctx.author.name
-    await ctx.respond(f"Hello {name}!")
+@bot.command()
+@commands.is_owner()  # Prevent other people from using the command
+async def sync(ctx: commands.Context) -> None:
+    """Sync app commands to Discord."""
+    await ctx.bot.tree.sync()
+    await ctx.send('Application commands synchronized!')
 
 
-@bot.command(name="유저추가")
-async def add(ctx, member: Optional[discord.Member]):
+@bot.hybrid_command(name="유저추가", description="등록되지 않은 유저를 추가합니다.")
+@app_commands.describe(
+    member='등록할 유저를 선택해주세요.',
+)
+@app_commands.rename(
+    member='이름'
+)
+async def add(ctx, member: discord.Member):
+    """
+    등록되지 않은 유저를 추가합니다.\n
+    봇을 제외한 유저를 선택해 유저를 추가해주세요.
+
+    Parameters
+    -----------
+    member: discord.Member
+    등록할 유저를 선택해주세요.
+    """
+
     try:
         conn, cur = connection.get_connection()
 
     except:
         print(f"[알림] DB와의 연결에 실패했습니다.")
-        await ctx.respond(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+        await ctx.send(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
 
     sql = '''
     INSERT INTO userinfo (user_id, user_name) VALUES (%s, %s);
@@ -58,28 +77,49 @@ async def add(ctx, member: Optional[discord.Member]):
         conn.commit()
         conn.close
 
-        await ctx.respond(f"[알림] DB에 {member.display_name}님을 추가했습니다.")
+        await ctx.send(f"[알림] DB에 {member.display_name}님을 추가했습니다.")
 
     except pymysql.err.IntegrityError as error:
         print(error)
 
-        await ctx.respond(f"[알림] {member.display_name}님은 DB에 이미 추가된 유저입니다.")
+        await ctx.send(f"[알림] {member.display_name}님은 DB에 이미 추가된 유저입니다.")
 
 
-@bot.command(name="지급")
-async def give(ctx, name: str, cnt: int):
+@bot.hybrid_command(name="지급", description="유저에게 nyanbit를 n개 지급합니다.")
+@app_commands.describe(
+    member='지급할 유저를 선택해주세요.',
+    cnt='지급할 개수를 적어주세요. (0이상의 정수만 가능)',
+)
+@app_commands.rename(
+    member='이름',
+    cnt='개수'
+)
+async def give(ctx, member: discord.Member, cnt: int):
+    """
+    등록되지 않은 유저를 추가합니다.\n
+    봇을 제외한 유저를 선택해 유저를 추가해주세요.
+
+    Parameters
+    -----------
+    member: discord.Member
+    지급할 유저를 선택해주세요.
+
+    cnt: int
+    지급할 개수를 적어주세요. (0이상의 정수만 가능)
+    """
     conn, cur = connection.get_connection()
-    sql = 'SELECT * FROM userinfo WHERE user_name = %s'
-    cur.execute(sql, name)
-    result = cur.fetchone()
-
-    user_id = result['user_id']
     sql = 'SELECT * FROM nyanbit WHERE user_id = %s'
-    cur.execute(sql, user_id)
+    cur.execute(sql, member.name)
     result = cur.fetchone()
 
-    print(result)
+    if result is None:
+        await ctx.send(f"[알림] {member.display_name}은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
-    await ctx.respond(f"{name}에게 {cnt}개를 지급했습니다.")
+    sql = 'UPDATE nyanbit SET nyanbit_cnt = %s WHERE user_id = %s'
+    cur.execute(sql, (result['nyanbit_cnt'] + cnt, member.name))
+    conn.commit()
+    conn.close
+
+    await ctx.send(f"[알림] {member.display_name}님에게 {cnt}개를 지급했습니다.")
 
 bot.run(TOKEN)
