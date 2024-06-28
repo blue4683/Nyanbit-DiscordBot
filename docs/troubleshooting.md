@@ -36,6 +36,45 @@ def Optional(self, parameters):
 async def give(ctx, member: discord.Member, cnt: int):
 ```
 
+- 슬래시 명령어 `args`의 `description`을 설정하고 싶어서 다음과 같이 작성했다.
+
+```python
+@bot.hybrid_command(name="유저추가", description="등록되지 않은 유저를 추가합니다.")
+@app_commands.describe(
+    member='등록할 유저를 선택해주세요.',
+)
+async def add(ctx, member: discord.Member):
+```
+
+- 명령어의 설명까지는 바뀌었으나 `args`의 설명은 반영되지 않았다.
+- `app_commands.describe`의 설명을 보니 `Union[str, locale_str]`를 인자로 받고 있는데 여기서 `str`은 변수 이름을(여기서는 `member`), `locale_str`은 `description`을 의미한다.
+- `locale_str`의 설명을 보면 다음과 같다.
+
+```
+Marks a string as ready for translation.
+
+This is done lazily and is not actually translated until :meth:`CommandTree.sync` is called.
+
+The sync method then ultimately defers the responsibility of translating to the :class:`Translator`
+instance used by the :class:`CommandTree`. For more information on the translation flow, see the
+:class:`Translator` documentation.
+```
+
+- 요약하자면, 문자열을 나타내는데 `lazy`하게 수행하고, 실제로 `CommandTree.sync`가 호출되지 않으면 번역되지 않는다고 되어있다.
+- 해결을 위해 깃허브 Repo의 Q&A를 살펴보다 다음과 같은 함수로 동기화를 시킬 수 있음을 확인할 수 있었다.
+
+```python
+@bot.command()
+@commands.is_owner()  # Prevent other people from using the command
+async def sync_tree(ctx: commands.Context) -> None:
+    """Sync app commands to Discord."""
+    await ctx.bot.tree.sync()
+    await ctx.send('Application commands synchronized!')
+```
+
+- 디스코드 채팅에서 `/sync_tree`을 입력하면 동기화가 된다.
+- 동기화 후에 디스코드 앱을 재시작하면 제대로 반영됨을 확인할 수 있었다.
+
 ## DB
 
 ### Pymysql

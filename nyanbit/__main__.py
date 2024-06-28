@@ -34,9 +34,20 @@ async def on_ready():
     print("------")
 
 
+@bot.command()
+@commands.is_owner()  # Prevent other people from using the command
+async def sync(ctx: commands.Context) -> None:
+    """Sync app commands to Discord."""
+    await ctx.bot.tree.sync()
+    await ctx.send('Application commands synchronized!')
+
+
 @bot.hybrid_command(name="유저추가", description="등록되지 않은 유저를 추가합니다.")
 @app_commands.describe(
     member='등록할 유저를 선택해주세요.',
+)
+@app_commands.rename(
+    member='이름'
 )
 async def add(ctx, member: discord.Member):
     """
@@ -74,10 +85,14 @@ async def add(ctx, member: discord.Member):
         await ctx.send(f"[알림] {member.display_name}님은 DB에 이미 추가된 유저입니다.")
 
 
-@bot.hybrid_command(name="지급", description="member에게 nyanbit를 cnt개 지급합니다.")
+@bot.hybrid_command(name="지급", description="유저에게 nyanbit를 n개 지급합니다.")
 @app_commands.describe(
     member='지급할 유저를 선택해주세요.',
     cnt='지급할 개수를 적어주세요. (0이상의 정수만 가능)',
+)
+@app_commands.rename(
+    member='이름',
+    cnt='개수'
 )
 async def give(ctx, member: discord.Member, cnt: int):
     """
