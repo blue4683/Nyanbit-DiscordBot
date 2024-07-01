@@ -43,10 +43,14 @@ def is_allowed():
         '''
 
         cur.execute(sql)
-        result = cur.fetchone()
+        result = cur.fetchall()
         conn.close()
 
-        return result != None and ctx.author.id in result['user_id']
+        for user in result:
+            if user['user_id'] == ctx.author.name:
+                return 1
+
+        return 0
 
     return commands.check(predicate)
 
