@@ -28,6 +28,29 @@ bot = commands.Bot(
 )
 
 
+def is_allowed():
+    async def predicate(ctx):
+
+        try:
+            conn, cur = connection.get_connection()
+
+        except:
+            print(f"[알림] DB와의 연결에 실패했습니다.")
+            await ctx.send(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+
+        sql = '''
+        SELECT user_id FROM userinfo WHERE is_admin = 1;
+        '''
+
+        cur.execute(sql)
+        result = cur.fetchone()
+        conn.close()
+
+        return result != None and ctx.author.id in result['user_id']
+
+    return commands.check(predicate)
+
+
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user} (ID: {bot.user.id})")
@@ -42,6 +65,92 @@ async def sync(ctx: commands.Context) -> None:
     await ctx.send('Application commands synchronized!')
 
 
+@bot.hybrid_command(name="관리자등록", description="관리자 권한을 부여합니다. (관리자만 가능)")
+@app_commands.describe(
+    member='권한을 부여할 유저를 선택해주세요.',
+)
+@app_commands.rename(
+    member='이름',
+)
+@commands.is_owner()
+async def give_admin(ctx, member: discord.Member):
+    """
+    관리자 권한을 부여합니다. (관리자만 가능)\n
+    봇을 제외한 유저를 선택해 관리자 권한을 부여해주세요.
+
+    Parameters
+    -----------
+    member: discord.Member
+    권한을 부여할 유저를 선택해주세요.
+    """
+
+    try:
+        conn, cur = connection.get_connection()
+
+    except:
+        print(f"[알림] DB와의 연결에 실패했습니다.")
+        await ctx.send(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+
+    sql = '''
+    UPDATE userinfo SET is_admin = 1 WHERE user_id = %s;
+    '''
+
+    try:
+        cur.execute(sql, member.name)
+        conn.commit()
+        conn.close()
+
+        await ctx.send(f"[알림] {member.display_name}님에게 관리자 권한을 부여했습니다.")
+
+    except pymysql.err.IntegrityError as error:
+        print(error)
+
+        await ctx.send(f"[알림] {member.display_name}님은 관리자입니다.")
+
+
+@bot.hybrid_command(name="관리자해제", description="관리자 권한을 제거합니다. (관리자만 가능)")
+@app_commands.describe(
+    member='권한을 제거할 유저를 선택해주세요.',
+)
+@app_commands.rename(
+    member='이름',
+)
+@commands.is_owner()
+async def remove_admin(ctx, member: discord.Member):
+    """
+    관리자 권한을 제거합니다. (관리자만 가능)\n
+    봇을 제외한 유저를 선택해 관리자 권한을 제거해주세요.
+
+    Parameters
+    -----------
+    member: discord.Member
+    권한을 제거할 유저를 선택해주세요.
+    """
+
+    try:
+        conn, cur = connection.get_connection()
+
+    except:
+        print(f"[알림] DB와의 연결에 실패했습니다.")
+        await ctx.send(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+
+    sql = '''
+    UPDATE userinfo SET is_admin = 0 WHERE user_id = %s;
+    '''
+
+    try:
+        cur.execute(sql, member.name)
+        conn.commit()
+        conn.close()
+
+        await ctx.send(f"[알림] {member.display_name}님의 관리자 권한을 제거했습니다.")
+
+    except pymysql.err.IntegrityError as error:
+        print(error)
+
+        await ctx.send(f"[알림] {member.display_name}님은 관리자가 아닙니다.")
+
+
 @bot.hybrid_command(name="유저추가", description="등록되지 않은 유저를 추가합니다.")
 @app_commands.describe(
     member='등록할 유저를 선택해주세요.',
@@ -49,6 +158,7 @@ async def sync(ctx: commands.Context) -> None:
 @app_commands.rename(
     member='이름'
 )
+@is_allowed()
 async def add(ctx, member: discord.Member):
     """
     등록되지 않은 유저를 추가합니다.\n
@@ -85,6 +195,12 @@ async def add(ctx, member: discord.Member):
         await ctx.send(f"[알림] {member.display_name}님은 DB에 이미 추가된 유저입니다.")
 
 
+@add.error
+async def add_error(ctx, error):
+    if isinstance(error, commands.CheckFailure):
+        await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
+
+
 @bot.hybrid_command(name="지급", description="유저에게 nyanbit를 n개 지급합니다.")
 @app_commands.describe(
     member='지급할 유저를 선택해주세요.',
@@ -94,6 +210,7 @@ async def add(ctx, member: discord.Member):
     member='이름',
     cnt='개수'
 )
+@is_allowed()
 async def give(ctx, member: discord.Member, cnt: int):
     """
     등록되지 않은 유저를 추가합니다.\n
@@ -121,5 +238,11 @@ async def give(ctx, member: discord.Member, cnt: int):
     conn.close
 
     await ctx.send(f"[알림] {member.display_name}님에게 {cnt}개를 지급했습니다.")
+
+
+@give.error
+async def give_error(ctx, error):
+    if isinstance(error, commands.CheckFailure):
+        await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
 
 bot.run(TOKEN)

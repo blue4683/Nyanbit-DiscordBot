@@ -36,6 +36,8 @@ def Optional(self, parameters):
 async def give(ctx, member: discord.Member, cnt: int):
 ```
 
+---
+
 - 슬래시 명령어 `args`의 `description`을 설정하고 싶어서 다음과 같이 작성했다.
 
 ```python
