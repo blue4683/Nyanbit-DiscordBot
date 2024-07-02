@@ -7,6 +7,7 @@ from pymysql.constants import CLIENT
 load_dotenv()
 USERID = os.getenv("USERID")
 PASSWORD = os.getenv("PASSWORD")
+DBNAME = os.getenv("DBNAME")
 
 
 class Connection:
@@ -14,7 +15,7 @@ class Connection:
         self.host = '127.0.0.1'
         self.user = USERID
         self.password = PASSWORD
-        self.db = 'nyanbit_db'
+        self.db = DBNAME
         self.port = 3306
         self.charset = 'utf8'
         self.conn = pymysql.connect(
