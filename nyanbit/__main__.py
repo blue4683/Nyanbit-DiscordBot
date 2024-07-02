@@ -5,6 +5,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import os
 import pymysql
+import typing
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -161,12 +162,11 @@ async def add(ctx, member: discord.Member):
     conn, cur = connection.get_connection()
 
     sql = '''
-    INSERT INTO userinfo (user_id, user_name) VALUES (%s, %s);
-    INSERT INTO nyanbit (user_id, nyanbit_cnt) VALUES (%s, %s);
+    INSERT INTO userinfo (user_id, user_name, is_admin, nyanbit) VALUES (%s, %s, %s, %s);
     '''
 
     try:
-        cur.execute(sql, (member.name, member.display_name, member.name, 0))
+        cur.execute(sql, (member.name, member.display_name, 0, 0))
         conn.commit()
         conn.close
 
@@ -196,8 +196,8 @@ async def add_error(ctx, error):
 @is_allowed()
 async def give(ctx, member: discord.Member, cnt: int):
     """
-    등록되지 않은 유저를 추가합니다.\n
-    봇을 제외한 유저를 선택해 유저를 추가해주세요.
+    유저에게 nyanbit를 n개 지급합니다.\n
+    봇을 제외한 유저를 선택해주세요.
 
     Parameters
     -----------
@@ -208,15 +208,15 @@ async def give(ctx, member: discord.Member, cnt: int):
     지급할 개수를 적어주세요. (0이상의 정수만 가능)
     """
     conn, cur = connection.get_connection()
-    sql = 'SELECT * FROM nyanbit WHERE user_id = %s'
+    sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
     cur.execute(sql, member.name)
     result = cur.fetchone()
 
     if result is None:
         await ctx.send(f"[알림] {member.display_name}은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
-    sql = 'UPDATE nyanbit SET nyanbit_cnt = %s WHERE user_id = %s'
-    cur.execute(sql, (result['nyanbit_cnt'] + cnt, member.name))
+    sql = 'UPDATE userinfo SET nyanbit = %s WHERE user_id = %s'
+    cur.execute(sql, (result['nyanbit'] + cnt, member.name))
     conn.commit()
     conn.close
 
@@ -227,5 +227,6 @@ async def give(ctx, member: discord.Member, cnt: int):
 async def give_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
+
 
 bot.run(TOKEN)
