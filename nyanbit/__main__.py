@@ -30,13 +30,7 @@ bot = commands.Bot(
 
 def is_allowed():
     async def predicate(ctx):
-
-        try:
-            conn, cur = connection.get_connection()
-
-        except:
-            print(f"[알림] DB와의 연결에 실패했습니다.")
-            await ctx.send(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+        conn, cur = connection.get_connection()
 
         sql = '''
         SELECT user_id FROM userinfo WHERE is_admin = 1;
@@ -88,12 +82,7 @@ async def give_admin(ctx, member: discord.Member):
     권한을 부여할 유저를 선택해주세요.
     """
 
-    try:
-        conn, cur = connection.get_connection()
-
-    except:
-        print(f"[알림] DB와의 연결에 실패했습니다.")
-        await ctx.send(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+    conn, cur = connection.get_connection()
 
     sql = '''
     UPDATE userinfo SET is_admin = 1 WHERE user_id = %s;
@@ -131,12 +120,7 @@ async def remove_admin(ctx, member: discord.Member):
     권한을 제거할 유저를 선택해주세요.
     """
 
-    try:
-        conn, cur = connection.get_connection()
-
-    except:
-        print(f"[알림] DB와의 연결에 실패했습니다.")
-        await ctx.send(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+    conn, cur = connection.get_connection()
 
     sql = '''
     UPDATE userinfo SET is_admin = 0 WHERE user_id = %s;
@@ -174,12 +158,7 @@ async def add(ctx, member: discord.Member):
     등록할 유저를 선택해주세요.
     """
 
-    try:
-        conn, cur = connection.get_connection()
-
-    except:
-        print(f"[알림] DB와의 연결에 실패했습니다.")
-        await ctx.send(f"[알림] 현재 DB가 오프라인입니다. 잠시 후에 다시 시도해주십시오.")
+    conn, cur = connection.get_connection()
 
     sql = '''
     INSERT INTO userinfo (user_id, user_name) VALUES (%s, %s);
