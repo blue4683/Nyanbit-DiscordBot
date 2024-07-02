@@ -213,7 +213,7 @@ async def give(ctx, member: discord.Member, cnt: int):
     result = cur.fetchone()
 
     if result is None:
-        await ctx.send(f"[알림] {member.display_name}은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
+        await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
     sql = 'UPDATE userinfo SET nyanbit = %s WHERE user_id = %s'
     cur.execute(sql, (result['nyanbit'] + cnt, member.name))
@@ -228,5 +228,49 @@ async def give_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
 
+
+@bot.hybrid_command(name="확인", description="특정 유저 또는 모든 유저의 nyanbit 개수를 확인합니다.")
+@app_commands.describe(
+    member='확인할 유저를 선택해주세요. 선택X 시 모든 유저',
+)
+@app_commands.rename(
+    member='이름',
+)
+async def check(ctx, member: typing.Optional[discord.Member]):
+    """
+    특정 유저 또는 모든 유저의 nyanbit 개수를 확인합니다.\n
+    이름을 선택하면 그 유저의 개수를, 선택하지 않으면 모든 유저의 개수를 확인합니다.
+
+    Parameters
+    -----------
+    member: typing.Optional[discord.Member]
+    확인할 유저를 선택해주세요. (선택하지 않을 시 모든 유저)
+    """
+    conn, cur = connection.get_connection()
+    if member:
+        try:
+            sql = 'SELECT user_name, nyanbit FROM userinfo WHERE user_id = %s'
+            cur.execute(sql, member.name)
+            result = cur.fetchone()
+
+            await ctx.send(f"[알림] {result['user_name']}님은 {result['nyanbit']}개를 가지고 있습니다.")
+
+        except:
+            await ctx.send(f"[알림] {member.display_name}님은 없는 유저입니다.")
+
+    else:
+        sql = 'SELECT user_name, nyanbit FROM userinfo'
+        cur.execute(sql)
+        result = cur.fetchall()
+
+        txt = ''
+        for res in result:
+            txt += f"{res['user_name']} - {res['nyanbit']}개\n"
+
+        if not txt:
+            await ctx.send(f"[알림] 현재 등록된 유저가 없습니다. '/유저추가' 명령어를 통해 유저를 등록해주세요.")
+
+        else:
+            await ctx.send(f"[알림]\n{txt}")
 
 bot.run(TOKEN)
