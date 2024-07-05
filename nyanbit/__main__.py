@@ -94,12 +94,12 @@ async def give_admin(ctx, member: discord.Member):
         conn.commit()
         conn.close()
 
-        await ctx.send(f"[알림] {member.display_name}님에게 관리자 권한을 부여했습니다.")
+        return await ctx.send(f"[알림] {member.display_name}님에게 관리자 권한을 부여했습니다.")
 
     except pymysql.err.IntegrityError as error:
         print(error)
 
-        await ctx.send(f"[알림] {member.display_name}님은 관리자입니다.")
+        return await ctx.send(f"[알림] {member.display_name}님은 관리자입니다.")
 
 
 @bot.hybrid_command(name="관리자해제", description="관리자 권한을 제거합니다. (관리자만 가능)")
@@ -132,12 +132,12 @@ async def remove_admin(ctx, member: discord.Member):
         conn.commit()
         conn.close()
 
-        await ctx.send(f"[알림] {member.display_name}님의 관리자 권한을 제거했습니다.")
+        return await ctx.send(f"[알림] {member.display_name}님의 관리자 권한을 제거했습니다.")
 
     except pymysql.err.IntegrityError as error:
         print(error)
 
-        await ctx.send(f"[알림] {member.display_name}님은 관리자가 아닙니다.")
+        return await ctx.send(f"[알림] {member.display_name}님은 관리자가 아닙니다.")
 
 
 @bot.hybrid_command(name="유저추가", description="등록되지 않은 유저를 추가합니다.")
@@ -170,12 +170,12 @@ async def add(ctx, member: discord.Member):
         conn.commit()
         conn.close
 
-        await ctx.send(f"[알림] DB에 {member.display_name}님을 추가했습니다.")
+        return await ctx.send(f"[알림] DB에 {member.display_name}님을 추가했습니다.")
 
     except pymysql.err.IntegrityError as error:
         print(error)
 
-        await ctx.send(f"[알림] {member.display_name}님은 DB에 이미 추가된 유저입니다.")
+        return await ctx.send(f"[알림] {member.display_name}님은 DB에 이미 추가된 유저입니다.")
 
 
 @add.error
@@ -213,14 +213,14 @@ async def give(ctx, member: discord.Member, cnt: int):
     result = cur.fetchone()
 
     if result is None:
-        await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
+        return await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
     sql = 'UPDATE userinfo SET nyanbit = %s WHERE user_id = %s'
     cur.execute(sql, (result['nyanbit'] + cnt, member.name))
     conn.commit()
     conn.close
 
-    await ctx.send(f"[알림] {member.display_name}님에게 {cnt}개를 지급했습니다.")
+    return await ctx.send(f"[알림] {member.display_name}님에게 {cnt}개를 지급했습니다.")
 
 
 @give.error
@@ -272,5 +272,59 @@ async def check(ctx, member: typing.Optional[discord.Member]):
 
         else:
             await ctx.send(f"[알림]\n{txt}")
+
+
+@bot.hybrid_command(name="상환", description="유저에게 빌린 nyanbit n개를 상환합니다.")
+@app_commands.describe(
+    member='상환할 유저를 선택해주세요.',
+    cnt='상환할 개수를 적어주세요. (0이상의 정수만 가능)',
+)
+@app_commands.rename(
+    member='이름',
+    cnt='개수'
+)
+async def pay_back(ctx, member: discord.Member, cnt: int):
+    """
+    유저에게 nyanbit n개를 상환합니다.\n
+    봇을 제외한 유저를 선택해주세요.
+
+    Parameters
+    -----------
+    member: discord.Member
+    상환할 유저를 선택해주세요.
+
+    cnt: int
+    상환할 개수를 적어주세요. (0이상의 정수만 가능)
+    """
+    conn, cur = connection.get_connection()
+
+    sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
+    cur.execute(sql, ctx.author.name)
+    owner = cur.fetchone()
+
+    if owner is None:
+        return await ctx.send(f"[알림] {ctx.author.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
+
+    if owner['nyanbit'] < cnt:
+        return await ctx.send(f"[알림] {ctx.author.display_name}님은 현재 {owner['nyanbit']}를 가지고 있어 {cnt}개를 상환할 수 없습니다.")
+
+    sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
+    cur.execute(sql, member.name)
+    deptor = cur.fetchone()
+
+    if deptor is None:
+        return await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
+
+    sql = '''
+    UPDATE userinfo SET nyanbit = %s WHERE user_id = %s;
+    UPDATE userinfo SET nyanbit = %s WHERE user_id = %s;
+    '''
+    cur.execute(sql, (owner['nyanbit'] - cnt, ctx.author.name,
+                deptor['nyanbit'] + cnt, member.name))
+    conn.commit()
+    conn.close
+
+    await ctx.send(f"[알림] {ctx.author.display_name}님이 {member.display_name}님에게 {cnt}개를 상환했습니다.")
+
 
 bot.run(TOKEN)
