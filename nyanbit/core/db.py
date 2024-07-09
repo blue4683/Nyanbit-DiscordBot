@@ -31,3 +31,6 @@ class Connection:
     def get_connection(self):
         self.conn.ping()
         return self.conn, self.cur
+
+
+connection = Connection()
