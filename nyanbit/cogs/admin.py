@@ -1,13 +1,21 @@
+import os
 from core.db import connection
+from dotenv import load_dotenv
 
 import discord
 import pymysql
 from discord import app_commands
 from discord.ext import commands
 
+load_dotenv()
+DEVELOPER_ID = os.getenv("DEVELOPER_ID")
+
 
 def is_allowed():
     async def predicate(ctx):
+        if ctx.author.id == int(DEVELOPER_ID):
+            return 1
+
         conn, cur = connection.get_connection()
 
         sql = '''
@@ -19,7 +27,7 @@ def is_allowed():
         conn.close()
 
         for user in result:
-            if user['user_id'] == ctx.author.name:
+            if int(user['user_id']) == ctx.author.id:
                 return 1
 
         return 0
@@ -108,7 +116,7 @@ class Admin(commands.Cog):
         '''
 
         try:
-            cur.execute(sql, (member.name, member.display_name, 0, 0))
+            cur.execute(sql, (member.id, member.display_name, 0, 0))
             conn.commit()
             conn.close
 
@@ -123,6 +131,9 @@ class Admin(commands.Cog):
     async def add_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
+
+        if isinstance(error, commands.HybridCommandError):
+            print(error)
 
     @commands.hybrid_command(name="지급", description="유저에게 nyanbit를 n개 지급합니다.")
     @app_commands.describe(
@@ -149,14 +160,14 @@ class Admin(commands.Cog):
         """
         conn, cur = self.connection.get_connection()
         sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
-        cur.execute(sql, member.name)
+        cur.execute(sql, member.id)
         result = cur.fetchone()
 
         if result is None:
             return await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
         sql = 'UPDATE userinfo SET nyanbit = %s WHERE user_id = %s'
-        cur.execute(sql, (result['nyanbit'] + cnt, member.name))
+        cur.execute(sql, (result['nyanbit'] + cnt, member.id))
         conn.commit()
         conn.close
 
@@ -166,6 +177,9 @@ class Admin(commands.Cog):
     async def give_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
+
+        if isinstance(error, commands.HybridCommandError):
+            print(error)
 
 
 async def setup(bot):

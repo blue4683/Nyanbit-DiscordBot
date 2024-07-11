@@ -20,9 +20,29 @@ class Stream(commands.Cog):
 
     @commands.Cog.listener("on_voice_state_update")
     async def check_streaming(self, member, before, after):
-        if after.self_stream and member.name in self.allow_notification_list:
-            channel = self.bot.get_channel(int(CHANNEL_ID))
-            await channel.send(f"[알림] {member.display_name}이 방송하고 있습니다.")
+        if not self.allow_notification_list:
+            conn, cur = self.connection.get_connection()
+            await self.set_is_allowed_notification_list(cur)
+            conn.close()
+
+        if after.self_stream and str(member.id) in self.allow_notification_list:
+            try:
+                conn, cur = self.connection.get_connection()
+                sql = 'SELECT subscriber_id FROM subscriptions WHERE streamer_id = %s'
+                cur.execute(sql, member.id)
+                result = cur.fetchall()
+                if result == None:
+                    print('구독한 사람이 없음')
+                    return
+
+                for res in result:
+                    subscriber_id = res['subscriber_id']
+                    subscriber = self.bot.get_user(int(subscriber_id))
+                    dm_channel = await subscriber.create_dm()
+                    await dm_channel.send(f"[알림] {member.display_name}님이 방송하고 있습니다.")
+
+            except:
+                print('에러 발생')
 
     @commands.hybrid_command(name="방송알림허용", description="유저(자신)가 방송을 시작할 때 알림을 보내는 것을 허용합니다.")
     async def allow_notification(self, ctx):
@@ -40,7 +60,7 @@ class Stream(commands.Cog):
 
     async def set_notification(self, ctx, allow: bool):
         conn, cur = self.connection.get_connection()
-        user_id = ctx.author.name
+        user_id = ctx.author.id
         is_allowed_notification = 1 if allow else 0
         action = "허용" if allow else "거부"
 
@@ -49,21 +69,24 @@ class Stream(commands.Cog):
             cur.execute(sql, (is_allowed_notification, user_id))
             conn.commit()
 
-            sql = 'SELECT user_id FROM userinfo WHERE is_allowed_notification = 1;'
-            cur.execute(sql)
-            result = cur.fetchall()
-
-            allow_notification_list = set()
-            for res in result:
-                allow_notification_list.add(res['user_id'])
-
-            self.allow_notification_list = allow_notification_list
+            await self.set_is_allowed_notification_list(cur)
             conn.close()
 
             await ctx.send(f"[알림] {ctx.author.display_name}님이 방송 알림을 {action}했습니다.")
 
         except:
             await ctx.send(f"[알림] {ctx.author.display_name}님은 등록되지 않은 유저입니다.")
+
+    async def set_is_allowed_notification_list(self, cur):
+        sql = 'SELECT user_id FROM userinfo WHERE is_allowed_notification = 1;'
+        cur.execute(sql)
+        result = cur.fetchall()
+
+        allow_notification_list = set()
+        for res in result:
+            allow_notification_list.add(res['user_id'])
+
+        self.allow_notification_list = allow_notification_list
 
     @commands.hybrid_command(name="구독알림설정", description="알림을 허용한 유저가 방송을 시작했을 때 알림을 받습니다.")
     @app_commands.describe(
@@ -87,16 +110,16 @@ class Stream(commands.Cog):
         if check_member is None:
             return await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다.")
 
-        if check_member['is_allowed_notification'] == '0':
+        if not check_member['is_allowed_notification']:
             return await ctx.send(f"[알림] {member.display_name}님은 방송 알림을 거부한 유저입니다.")
 
-        streamer_id = member.name
+        streamer_id = member.id
         streamer_name = member.display_name
-        subscriber_id = ctx.author.name
+        subscriber_id = ctx.author.id
 
         try:
-            sql = 'INSERT INTO subscriptions (streamer_id, subscriber_id, subscribed_at) VALUES (%s, %s, %s);'
-            cur.execute(sql, (streamer_id, subscriber_id, datetime.now()))
+            sql = 'INSERT INTO subscriptions (streamer_id, subscriber_id) VALUES (%s, %s);'
+            cur.execute(sql, (streamer_id, subscriber_id))
             conn.commit()
             conn.close()
 
@@ -123,15 +146,15 @@ class Stream(commands.Cog):
         구독을 취소할 유저를 선택해주세요.
         """
         conn, cur = self.connection.get_connection()
-        streamer_id = member.name
+        streamer_id = member.id
         streamer_name = member.display_name
-        subscriber_id = ctx.author.name
+        subscriber_id = ctx.author.id
 
         try:
-            sql = 'SELECT EXISTS (SELECT 1 FROM subscriptions WHERE streamer_id = %s AND subscriber_id = %s);'
+            sql = 'SELECT EXISTS (SELECT 1 FROM subscriptions WHERE streamer_id = %s AND subscriber_id = %s) AS subscription_exists;'
             cur.execute(sql, (streamer_id, subscriber_id))
             result = cur.fetchone()
-            if result[0] == 0:
+            if not result['subscription_exists']:
                 return await ctx.send(f"[알림] {ctx.author.display_name}님은 {streamer_name}님을 구독하고 있지 않습니다.")
 
             sql = 'DELETE FROM subscriptions WHERE streamer_id = %s AND subscriber_id = %s;'
@@ -146,9 +169,9 @@ class Stream(commands.Cog):
 
             await ctx.send(f"[알림] 구독 취소에 실패했습니다.")
 
-    def is_allowed_notification(cur, member: discord.Member):
+    def is_allowed_notification(self, cur, member: discord.Member):
         sql = 'SELECT is_allowed_notification FROM userinfo WHERE user_id = %s;'
-        cur.execute(sql, member.name)
+        cur.execute(sql, member.id)
         result = cur.fetchone()
 
         return result

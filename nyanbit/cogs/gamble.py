@@ -32,7 +32,7 @@ class Gamble(commands.Cog):
         if member:
             try:
                 sql = 'SELECT user_name, nyanbit FROM userinfo WHERE user_id = %s'
-                cur.execute(sql, member.name)
+                cur.execute(sql, member.id)
                 result = cur.fetchone()
 
                 await ctx.send(f"[알림] {result['user_name']}님은 {result['nyanbit']}개를 가지고 있습니다.")
@@ -80,7 +80,7 @@ class Gamble(commands.Cog):
         conn, cur = self.connection.get_connection()
 
         sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
-        cur.execute(sql, ctx.author.name)
+        cur.execute(sql, ctx.author.id)
         owner = cur.fetchone()
 
         if owner is None:
@@ -90,7 +90,7 @@ class Gamble(commands.Cog):
             return await ctx.send(f"[알림] {ctx.author.display_name}님은 현재 {owner['nyanbit']}를 가지고 있어 {cnt}개를 상환할 수 없습니다.")
 
         sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
-        cur.execute(sql, member.name)
+        cur.execute(sql, member.id)
         deptor = cur.fetchone()
 
         if deptor is None:
@@ -100,8 +100,8 @@ class Gamble(commands.Cog):
         UPDATE userinfo SET nyanbit = %s WHERE user_id = %s;
         UPDATE userinfo SET nyanbit = %s WHERE user_id = %s;
         '''
-        cur.execute(sql, (owner['nyanbit'] - cnt, ctx.author.name,
-                    deptor['nyanbit'] + cnt, member.name))
+        cur.execute(sql, (owner['nyanbit'] - cnt, ctx.author.id,
+                    deptor['nyanbit'] + cnt, member.id))
         conn.commit()
         conn.close
 
