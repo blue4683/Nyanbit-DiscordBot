@@ -1,13 +1,21 @@
+import os
 from core.db import connection
+from dotenv import load_dotenv
 
 import discord
 import pymysql
 from discord import app_commands
 from discord.ext import commands
 
+load_dotenv()
+DEVELOPER_ID = os.getenv("DEVELOPER_ID")
+
 
 def is_allowed():
     async def predicate(ctx):
+        if ctx.author.id == int(DEVELOPER_ID):
+            return 1
+
         conn, cur = connection.get_connection()
 
         sql = '''
@@ -19,7 +27,7 @@ def is_allowed():
         conn.close()
 
         for user in result:
-            if user['user_id'] == ctx.author.name:
+            if int(user['user_id']) == ctx.author.id:
                 return 1
 
         return 0
@@ -48,33 +56,7 @@ class Admin(commands.Cog):
     )
     @commands.is_owner()
     async def give_admin(self, ctx, member: discord.Member):
-        """
-        관리자 권한을 부여합니다. (관리자만 가능)\n
-        봇을 제외한 유저를 선택해 관리자 권한을 부여해주세요.
-
-        Parameters
-        -----------
-        member: discord.Member
-        권한을 부여할 유저를 선택해주세요.
-        """
-
-        conn, cur = self.connection.get_connection()
-
-        sql = '''
-        UPDATE userinfo SET is_admin = 1 WHERE user_id = %s;
-        '''
-
-        try:
-            cur.execute(sql, member.name)
-            conn.commit()
-            conn.close()
-
-            return await ctx.send(f"[알림] {member.display_name}님에게 관리자 권한을 부여했습니다.")
-
-        except pymysql.err.IntegrityError as error:
-            print(error)
-
-            return await ctx.send(f"[알림] {member.display_name}님은 관리자입니다.")
+        await self.set_admin(ctx, member, True)
 
     @commands.hybrid_command(name="관리자해제", description="관리자 권한을 제거합니다. (관리자만 가능)")
     @app_commands.describe(
@@ -85,33 +67,28 @@ class Admin(commands.Cog):
     )
     @commands.is_owner()
     async def remove_admin(self, ctx, member: discord.Member):
-        """
-        관리자 권한을 제거합니다. (관리자만 가능)\n
-        봇을 제외한 유저를 선택해 관리자 권한을 제거해주세요.
+        await self.set_admin(ctx, member, False)
 
-        Parameters
-        -----------
-        member: discord.Member
-        권한을 제거할 유저를 선택해주세요.
-        """
-
+    async def set_admin(self, ctx, member: discord.Member, is_admin: bool):
         conn, cur = self.connection.get_connection()
+        admin_status = 1 if is_admin else 0
+        action = "부여" if is_admin else "제거"
 
         sql = '''
-        UPDATE userinfo SET is_admin = 0 WHERE user_id = %s;
+        UPDATE userinfo SET is_admin = %s WHERE user_id = %s;
         '''
 
         try:
-            cur.execute(sql, member.name)
+            cur.execute(sql, (admin_status, member.id))
             conn.commit()
             conn.close()
 
-            return await ctx.send(f"[알림] {member.display_name}님의 관리자 권한을 제거했습니다.")
+            await ctx.send(f"[알림] {member.display_name}님에게 관리자 권한을 {action}했습니다.")
 
         except pymysql.err.IntegrityError as error:
             print(error)
 
-            return await ctx.send(f"[알림] {member.display_name}님은 관리자가 아닙니다.")
+            await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다.")
 
     @commands.hybrid_command(name="유저추가", description="등록되지 않은 유저를 추가합니다.")
     @app_commands.describe(
@@ -139,7 +116,7 @@ class Admin(commands.Cog):
         '''
 
         try:
-            cur.execute(sql, (member.name, member.display_name, 0, 0))
+            cur.execute(sql, (member.id, member.display_name, 0, 0))
             conn.commit()
             conn.close
 
@@ -154,6 +131,9 @@ class Admin(commands.Cog):
     async def add_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
+
+        if isinstance(error, commands.HybridCommandError):
+            print(error)
 
     @commands.hybrid_command(name="지급", description="유저에게 nyanbit를 n개 지급합니다.")
     @app_commands.describe(
@@ -180,14 +160,14 @@ class Admin(commands.Cog):
         """
         conn, cur = self.connection.get_connection()
         sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
-        cur.execute(sql, member.name)
+        cur.execute(sql, member.id)
         result = cur.fetchone()
 
         if result is None:
             return await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
         sql = 'UPDATE userinfo SET nyanbit = %s WHERE user_id = %s'
-        cur.execute(sql, (result['nyanbit'] + cnt, member.name))
+        cur.execute(sql, (result['nyanbit'] + cnt, member.id))
         conn.commit()
         conn.close
 
@@ -197,6 +177,9 @@ class Admin(commands.Cog):
     async def give_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
+
+        if isinstance(error, commands.HybridCommandError):
+            print(error)
 
 
 async def setup(bot):
