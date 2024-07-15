@@ -10,10 +10,6 @@ HOST = os.getenv("SERVER_HOST")
 USERID = os.getenv("SERVER_USERID")
 PASSWORD = os.getenv("SERVER_PASSWORD")
 DBNAME = os.getenv("SERVER_DBNAME")
-print(HOST)
-print(USERID)
-print(PASSWORD)
-print(DBNAME)
 
 
 class Connection:
