@@ -1,18 +1,24 @@
-from dotenv import load_dotenv
 import os
 import pymysql
 import pymysql.cursors
+
+from dotenv import load_dotenv
 from pymysql.constants import CLIENT
 
 load_dotenv()
-USERID = os.getenv("USERID")
-PASSWORD = os.getenv("PASSWORD")
-DBNAME = os.getenv("DBNAME")
+HOST = os.getenv("SERVER_HOST")
+USERID = os.getenv("SERVER_USERID")
+PASSWORD = os.getenv("SERVER_PASSWORD")
+DBNAME = os.getenv("SERVER_DBNAME")
+print(HOST)
+print(USERID)
+print(PASSWORD)
+print(DBNAME)
 
 
 class Connection:
     def __init__(self):
-        self.host = '127.0.0.1'
+        self.host = HOST
         self.user = USERID
         self.password = PASSWORD
         self.db = DBNAME

@@ -1,8 +1,8 @@
 import datetime
 import os
 import pymysql
-from dotenv import load_dotenv
 from core.db import connection
+from dotenv import load_dotenv
 
 import discord
 from discord import app_commands
