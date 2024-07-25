@@ -39,5 +39,5 @@ class Nyanbit:
             os.path.abspath(os.path.dirname(__file__))), cogs_path)
 
         for ext in os.listdir(abs_cogs_path):
-            if ext.endswith(".py"):
-                await self.bot.load_extension(f"cogs.{ext.split('.')[0]}")
+            if not ext.startswith("__"):
+                await self.bot.load_extension(f"nyanbit.cogs.{ext}")

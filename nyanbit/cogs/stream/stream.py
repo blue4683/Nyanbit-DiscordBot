@@ -1,7 +1,6 @@
-import datetime
 import os
 import pymysql
-from core.db import connection
+from nyanbit import connection
 from dotenv import load_dotenv
 
 import discord
@@ -175,7 +174,3 @@ class Stream(commands.Cog):
         result = cur.fetchone()
 
         return result
-
-
-async def setup(bot):
-    await bot.add_cog(Stream(bot))

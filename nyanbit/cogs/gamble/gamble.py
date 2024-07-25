@@ -1,4 +1,4 @@
-from core.db import connection
+from nyanbit import connection
 
 import discord
 import typing
@@ -106,7 +106,3 @@ class Gamble(commands.Cog):
         conn.close
 
         await ctx.send(f"[알림] {ctx.author.display_name}님이 {member.display_name}님에게 {cnt}개를 상환했습니다.")
-
-
-async def setup(bot):
-    await bot.add_cog(Gamble(bot))

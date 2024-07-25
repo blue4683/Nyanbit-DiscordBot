@@ -1,5 +1,5 @@
 import os
-from core.db import connection
+from nyanbit import connection
 from dotenv import load_dotenv
 
 import discord
@@ -180,7 +180,3 @@ class Admin(commands.Cog):
 
         if isinstance(error, commands.HybridCommandError):
             print(error)
-
-
-async def setup(bot):
-    await bot.add_cog(Admin(bot))

@@ -7,10 +7,6 @@ from pymysql.constants import CLIENT
 
 load_dotenv()
 
-HOST = os.getenv("SERVER_HOST")
-USERID = os.getenv("SERVER_USERID")
-PASSWORD = os.getenv("SERVER_PASSWORD")
-DBNAME = os.getenv("SERVER_DBNAME")
 TEST_HOST = os.getenv("HOST")
 TEST_USERID = os.getenv("USERID")
 TEST_PASSWORD = os.getenv("PASSWORD")
@@ -38,3 +34,6 @@ class Connection:
     def get_connection(self):
         self.conn.ping()
         return self.conn, self.cur
+
+
+connection = Connection(TEST_HOST, TEST_USERID, TEST_PASSWORD, TEST_DBNAME)
