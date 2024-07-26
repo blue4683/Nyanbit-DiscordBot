@@ -19,6 +19,11 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
+    env:
+      HOST: ${{ secrets.HOST }}
+      USERID: ${{ secrets.USERID }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+      DBNAME: ${{ secrets.DBNAME }}
 
     steps:
     - uses: actions/checkout@v4
