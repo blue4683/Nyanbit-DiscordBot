@@ -1,7 +1,7 @@
-DROP TABLE `userinfo`;
-DROP TABLE `subscriptions`;
+DROP TABLE `nyanbit_db`.`userinfo`;
+DROP TABLE `nyanbit_db`.`subscriptions`;
 
-CREATE TABLE `userinfo` (
+CREATE TABLE `nyanbit_db`.`userinfo` (
   `user_id` char(24) NOT NULL,
   `user_name` char(8) DEFAULT NULL,
   `is_admin` tinyint DEFAULT '0',
@@ -10,7 +10,7 @@ CREATE TABLE `userinfo` (
   PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `subscriptions` (
+CREATE TABLE `nyanbit_db`.`subscriptions` (
   `subscriptions_id` int NOT NULL AUTO_INCREMENT,
   `streamer_id` char(24) DEFAULT NULL,
   `subscriber_id` char(24) DEFAULT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE `subscriptions` (
   KEY `_idx` (`streamer_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
-INSERT INTO `userinfo`
+INSERT INTO `nyanbit_db`.`userinfo`
 (`user_id`,
 `user_name`,
 `is_admin`,
