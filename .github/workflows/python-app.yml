@@ -33,12 +33,15 @@ jobs:
         run: sudo service mysql stop
 
       - name: Set up MySQL
-        uses: mirromutth/mysql-action@v1.1
+        uses: shogo82148/actions-setup-mysql@v1
         with:
-          host port: 3306
-          container port: 3306
-          mysql database: ${{ secrets.DBNAME }}
-          mysql root password: ${{ secrets.PASSWORD }}
+          mysql-version: '8.0'
+          my-cnf: |
+            innodb_log_file_size=256MB
+            innodb_buffer_pool_size=512MB
+            max_allowed_packet=16MB
+            max_connections=50
+            local_infile=1
 
       - name: Set up Python
         uses: actions/setup-python@v3
