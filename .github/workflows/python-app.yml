@@ -42,8 +42,8 @@ jobs:
             max_allowed_packet=16MB
             max_connections=50
             local_infile=1
-          user: 'root'
-          password: ${{ secrets.PASSWORD }}
+          root-password: ${{ secrets.PASSWORD }}
+        run: mysql -uroot -e 'SELECT version()'
 
       - name: Set up Python
         uses: actions/setup-python@v3
