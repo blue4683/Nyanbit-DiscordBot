@@ -44,7 +44,7 @@ jobs:
             local_infile=1
           root-password: ${{ secrets.PASSWORD }}
       - run: |
-          mysql -u root --password ${{ secrets.PASSWORD }}
+          mysql -u root --password[=${{ secrets.PASSWORD }}]
           select user, host from user
 
       - name: Set up Python
