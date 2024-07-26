@@ -20,7 +20,7 @@ CREATE TABLE `subscriptions` (
   KEY `_idx` (`streamer_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
-INSERT INTO `nyanbit_db`.`userinfo`
+INSERT INTO `userinfo`
 (`user_id`,
 `user_name`,
 `is_admin`,
