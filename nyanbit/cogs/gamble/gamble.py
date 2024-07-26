@@ -1,4 +1,4 @@
-from nyanbit import connection
+from nyanbit.core import connection
 
 import discord
 import typing

@@ -1,6 +1,6 @@
 import os
 import pymysql
-from nyanbit import connection
+from nyanbit.core import connection
 from dotenv import load_dotenv
 
 import discord
