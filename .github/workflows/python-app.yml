@@ -43,7 +43,7 @@ jobs:
             max_connections=50
             local_infile=1
           root-password: ${{ secrets.PASSWORD }}
-        run: mysql -uroot -e 'SELECT version()'
+      - run: mysql -uroot -e 'SELECT version()'
 
       - name: Set up Python
         uses: actions/setup-python@v3
