@@ -1,3 +1,5 @@
+CREATE DATABASE IF NOT EXISTS `nyanbit_db`;
+
 DROP TABLE `userinfo`;
 DROP TABLE `subscriptions`;
 
