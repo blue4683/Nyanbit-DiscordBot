@@ -1,4 +1,5 @@
-DROP TABLE `userinfo` IF NOT EXISTS `userinfo`;
+DROP TABLE `userinfo`;
+DROP TABLE `subscriptions`;
 
 CREATE TABLE `userinfo` (
   `user_id` char(24) NOT NULL,
@@ -8,8 +9,6 @@ CREATE TABLE `userinfo` (
   `is_allowed_notification` tinyint DEFAULT '0',
   PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-DROP TABLE `subscriptions` IF NOT EXISTS `subscriptions`;
 
 CREATE TABLE `subscriptions` (
   `subscriptions_id` int NOT NULL AUTO_INCREMENT,
