@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from core.bot import Nyanbit
+from nyanbit.core.bot import Nyanbit
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
