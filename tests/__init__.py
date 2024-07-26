@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from nyanbit.core.db import Connection
+from tests.core.db import Connection
 
 load_dotenv()
 
