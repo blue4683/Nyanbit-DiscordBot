@@ -3,14 +3,12 @@ import os
 import pymysql
 import pytest
 
-from tests import test_connection as connection
-
 load_dotenv()
 TEST_ID = os.getenv("TEST_ID")
 TEST_NAME = os.getenv("TEST_NAME")
 
 
-def test_add():
+def test_add(connection):
     _, cur = connection.get_connection()
 
     sql = 'SELECT user_id, user_name, is_admin, nyanbit FROM userinfo WHERE user_id = %s;'
@@ -23,7 +21,7 @@ def test_add():
     assert result['nyanbit'] == 0
 
 
-def test_add_duplicated():
+def test_add_duplicated(connection):
     with pytest.raises(pymysql.err.IntegrityError):
         conn, cur = connection.get_connection()
 
@@ -32,7 +30,7 @@ def test_add_duplicated():
         conn.commit()
 
 
-def test_set_admin():
+def test_set_admin(connection):
     conn, cur = connection.get_connection()
 
     sql = 'UPDATE userinfo SET is_admin = %s WHERE user_id = %s;'
@@ -47,7 +45,7 @@ def test_set_admin():
     assert result['is_admin'] == 1
 
 
-def test_give():
+def test_give(connection):
     conn, cur = connection.get_connection()
 
     sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
