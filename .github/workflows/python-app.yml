@@ -44,7 +44,7 @@ jobs:
             local_infile=1
       - run: |
           mysql -u root
-          select user from user
+          select user from user;
 
       - name: Set up Python
         uses: actions/setup-python@v3
