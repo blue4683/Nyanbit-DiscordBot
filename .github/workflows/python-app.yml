@@ -42,9 +42,8 @@ jobs:
             max_allowed_packet=16MB
             max_connections=50
             local_infile=1
-          root-password: ${{ secrets.PASSWORD }}
       - run: |
-          mysql -u root --password[=${{ secrets.PASSWORD }}]
+          mysql -u root
           select user, host from user
 
       - name: Set up Python
