@@ -21,7 +21,7 @@ jobs:
     env:
       HOST: 'localhost'
       USERID: 'root'
-      PASSWORD: ''
+      PASSWORD: ${{ secrets.PASSWORD }}
       DBNAME: 'nyanbit_db'
       TEST_ID: '111111111111111111'
       TEST_NAME: 'TEST'
@@ -42,9 +42,10 @@ jobs:
             max_allowed_packet=16MB
             max_connections=50
             local_infile=1
-
-      - name: Start MySQL
-        run: mysql -uroot -e 'SELECT version()'
+          root-password: ${{ secrets.PASSWORD }}
+      - run: |
+          mysql -uroot -p
+          select user, host from user
 
       - name: Set up Python
         uses: actions/setup-python@v3
