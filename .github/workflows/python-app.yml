@@ -45,6 +45,7 @@ jobs:
           root-password: ${{ secrets.PASSWORD }}
       - run: |
           mysql -uroot -p
+          ${{ secrets.PASSWORD }}
           select user, host from user
 
       - name: Set up Python
