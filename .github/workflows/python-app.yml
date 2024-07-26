@@ -47,6 +47,7 @@ jobs:
       - name: Create DB
         run: |
           mysql -u root -p'${{ secrets.PASSWORD }}' -e 'CREATE DATABASE nyanbit_db DEFAULT CHARACTER SET UTF8;'
+          mysql -u root -p'${{ secrets.PASSWORD }}' -e 'USE DATABASE nyanbit_db;'
 
       - name: Set up Python
         uses: actions/setup-python@v3
