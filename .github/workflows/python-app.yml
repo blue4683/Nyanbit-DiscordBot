@@ -44,6 +44,15 @@ jobs:
             local_infile=1
           root-password: ${{ secrets.PASSWORD }}
 
+      - name: Set up .env
+      run: |
+        echo HOST: 'localhost' >> .env
+        echo USERID: 'root' >> .env
+        echo PASSWORD: ${{ secrets.PASSWORD }} >> .env
+        echo DBNAME: 'nyanbit_db' >> .env
+        echo TEST_ID: '111111111111111111' >> .env
+        echo TEST_NAME: 'TEST' >> .env
+
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
