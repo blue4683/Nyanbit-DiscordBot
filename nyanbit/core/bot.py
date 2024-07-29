@@ -3,12 +3,16 @@ import os
 
 import discord
 from discord.ext import commands
+from nyanbit.logging import Logger
 
 
 class Nyanbit:
     def __init__(self, token):
         self.bot = None
         self.token = token
+
+    def __del__(self):
+        Logger._Logger.info("Nyanbit가 종료됩니다.")
 
     def start(self):
         asyncio.run(self.initialize())

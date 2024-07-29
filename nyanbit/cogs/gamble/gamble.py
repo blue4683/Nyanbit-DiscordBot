@@ -1,4 +1,5 @@
 from nyanbit.core import connection
+from nyanbit.logging import Logger
 
 import discord
 import typing
@@ -10,6 +11,7 @@ class Gamble(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.connection = connection
+        self.Logger = Logger._Logger
 
     @commands.hybrid_command(name="확인", description="특정 유저 또는 모든 유저의 nyanbit 개수를 확인합니다.")
     @app_commands.describe(
@@ -84,9 +86,12 @@ class Gamble(commands.Cog):
         owner = cur.fetchone()
 
         if owner is None:
+            self.Logger.warning(f"{ctx.author.display_name}님은 등록되지 않은 유저입니다.")
             return await ctx.send(f"[알림] {ctx.author.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
         if owner['nyanbit'] < cnt:
+            self.Logger.warning(
+                f"{ctx.author.display_name}님은 {owner['nyanbit']}를 가지고 {cnt}개를 상환하려다 실패했습니다.")
             return await ctx.send(f"[알림] {ctx.author.display_name}님은 현재 {owner['nyanbit']}를 가지고 있어 {cnt}개를 상환할 수 없습니다.")
 
         sql = 'SELECT nyanbit FROM userinfo WHERE user_id = %s'
@@ -94,6 +99,7 @@ class Gamble(commands.Cog):
         deptor = cur.fetchone()
 
         if deptor is None:
+            self.Logger.warning(f"{member.display_name}님은 등록되지 않은 유저입니다.")
             return await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
         sql = '''
@@ -105,4 +111,6 @@ class Gamble(commands.Cog):
         conn.commit()
         conn.close
 
+        self.Logger.info(
+            f"{ctx.author.display_name}님이 {member.display_name}님에게 {cnt}개를 상환했습니다.")
         await ctx.send(f"[알림] {ctx.author.display_name}님이 {member.display_name}님에게 {cnt}개를 상환했습니다.")

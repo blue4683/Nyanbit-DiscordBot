@@ -1,6 +1,7 @@
 import os
 import pymysql
 from nyanbit.core import connection
+from nyanbit.logging import Logger
 from dotenv import load_dotenv
 
 import discord
@@ -16,6 +17,7 @@ class Stream(commands.Cog):
         self.bot = bot
         self.connection = connection
         self.allow_notification_list = set()
+        self.Logger = Logger._Logger
 
     @commands.Cog.listener("on_voice_state_update")
     async def check_streaming(self, member, before, after):
@@ -24,24 +26,31 @@ class Stream(commands.Cog):
             await self.set_is_allowed_notification_list(cur)
             conn.close()
 
-        if after.self_stream and str(member.id) in self.allow_notification_list:
-            try:
-                conn, cur = self.connection.get_connection()
-                sql = 'SELECT subscriber_id FROM subscriptions WHERE streamer_id = %s'
-                cur.execute(sql, member.id)
-                result = cur.fetchall()
-                if result == None:
-                    print('구독한 사람이 없음')
-                    return
+        if (before.self_stream != after.self_stream) and str(member.id) in self.allow_notification_list:
+            if after.self_stream:
+                self.Logger.info(f"{member.display_name}님이 디스코드 라이브를 시작했습니다.")
+                try:
+                    conn, cur = self.connection.get_connection()
+                    sql = 'SELECT subscriber_id FROM subscriptions WHERE streamer_id = %s'
+                    cur.execute(sql, member.id)
+                    result = cur.fetchall()
+                    if result == None:
+                        print('구독한 사람이 없음')
+                        return
 
-                for res in result:
-                    subscriber_id = res['subscriber_id']
-                    subscriber = self.bot.get_user(int(subscriber_id))
-                    dm_channel = await subscriber.create_dm()
-                    await dm_channel.send(f"[알림] {member.display_name}님이 방송하고 있습니다.")
+                    for res in result:
+                        subscriber_id = res['subscriber_id']
+                        subscriber = self.bot.get_user(int(subscriber_id))
+                        dm_channel = await subscriber.create_dm()
+                        await dm_channel.send(f"[알림] {member.display_name}님이 방송하고 있습니다.")
 
-            except:
-                print('에러 발생')
+                except:
+                    self.Logger.warning(
+                        f"{member.display_name}님의 방송 알림을 보내는 중 에러가 발생했습니다.")
+                    print('에러 발생')
+
+            else:
+                self.Logger.info(f"{member.display_name}님이 디스코드 라이브를 종료했습니다.")
 
     @commands.hybrid_command(name="방송알림허용", description="유저(자신)가 방송을 시작할 때 알림을 보내는 것을 허용합니다.")
     async def allow_notification(self, ctx):
@@ -71,9 +80,12 @@ class Stream(commands.Cog):
             await self.set_is_allowed_notification_list(cur)
             conn.close()
 
+            self.Logger.info(
+                f"{ctx.author.display_name}님이 방송 알림을 {action}했습니다.")
             await ctx.send(f"[알림] {ctx.author.display_name}님이 방송 알림을 {action}했습니다.")
 
         except:
+            self.Logger.info(f"{ctx.author.display_name}님은 등록되지 않은 유저입니다.")
             await ctx.send(f"[알림] {ctx.author.display_name}님은 등록되지 않은 유저입니다.")
 
     async def set_is_allowed_notification_list(self, cur):
@@ -85,6 +97,7 @@ class Stream(commands.Cog):
         for res in result:
             allow_notification_list.add(res['user_id'])
 
+        self.Logger.info(f"방송 알람을 허용한 사람들의 리스트를 최신화했습니다.")
         self.allow_notification_list = allow_notification_list
 
     @commands.hybrid_command(name="구독알림설정", description="알림을 허용한 유저가 방송을 시작했을 때 알림을 받습니다.")
@@ -122,6 +135,8 @@ class Stream(commands.Cog):
             conn.commit()
             conn.close()
 
+            self.Logger.info(
+                f"{ctx.author.display_name}님이 {streamer_name}님을 구독했습니다.")
             await ctx.send(f"[알림] {ctx.author.display_name}님이 {streamer_name}님을 구독했습니다.")
 
         except pymysql.err.IntegrityError:
@@ -161,11 +176,12 @@ class Stream(commands.Cog):
             conn.commit()
             conn.close()
 
+            self.Logger.info(
+                "{ctx.author.display_name}님이 {streamer_name}님을 구독 취소했습니다.")
             await ctx.send(f"[알림] {ctx.author.display_name}님이 {streamer_name}님을 구독 취소했습니다.")
 
         except pymysql.err.IntegrityError as error:
-            print(error)
-
+            self.Logger.warning(error)
             await ctx.send(f"[알림] 구독 취소에 실패했습니다.")
 
     def is_allowed_notification(self, cur, member: discord.Member):

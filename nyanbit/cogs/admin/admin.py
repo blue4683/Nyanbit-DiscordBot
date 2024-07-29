@@ -1,5 +1,6 @@
 import os
 from nyanbit.core import connection
+from nyanbit.logging import Logger
 from dotenv import load_dotenv
 
 import discord
@@ -39,12 +40,14 @@ class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.connection = connection
+        self.Logger = Logger._Logger
 
     @commands.command()
     @commands.is_owner()
     async def sync(self, ctx: commands.Context) -> None:
         """Sync app commands to Discord."""
         await ctx.bot.tree.sync()
+        self.Logger.info('명령어를 동기화했습니다.')
         await ctx.send('Application commands synchronized!')
 
     @commands.hybrid_command(name="관리자등록", description="관리자 권한을 부여합니다. (관리자만 가능)")
@@ -83,11 +86,12 @@ class Admin(commands.Cog):
             conn.commit()
             conn.close()
 
+            self.Logger.info(
+                f'{ctx.author.display_name}님이 {member.display_name}님에게 관리자 권한을 {action}했습니다.')
             await ctx.send(f"[알림] {member.display_name}님에게 관리자 권한을 {action}했습니다.")
 
         except pymysql.err.IntegrityError as error:
-            print(error)
-
+            self.Logger.warning(f"{member.display_name}님은 등록되지 않은 유저입니다.")
             await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다.")
 
     @commands.hybrid_command(name="유저추가", description="등록되지 않은 유저를 추가합니다.")
@@ -120,20 +124,21 @@ class Admin(commands.Cog):
             conn.commit()
             conn.close
 
-            return await ctx.send(f"[알림] DB에 {member.display_name}님을 추가했습니다.")
+            self.Logger.info(
+                f"{ctx.author.display_name}님이 DB에 {member.display_name}님을 추가했습니다.")
+            await ctx.send(f"[알림] DB에 {member.display_name}님을 추가했습니다.")
 
         except pymysql.err.IntegrityError as error:
-            print(error)
-
             return await ctx.send(f"[알림] {member.display_name}님은 DB에 이미 추가된 유저입니다.")
 
     @add.error
     async def add_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
+            self.Logger.warning(f"{ctx.author.display_name}님은 관리자 권한이 없습니다.")
 
         if isinstance(error, commands.HybridCommandError):
-            print(error)
+            self.Logger.warning(error)
 
     @commands.hybrid_command(name="지급", description="유저에게 nyanbit를 n개 지급합니다.")
     @app_commands.describe(
@@ -164,6 +169,7 @@ class Admin(commands.Cog):
         result = cur.fetchone()
 
         if result is None:
+            self.Logger.info(f"{member.display_name}님은 등록되지 않은 유저입니다.")
             return await ctx.send(f"[알림] {member.display_name}님은 등록되지 않은 유저입니다. '/유저추가' 명령어를 통해 등록을 먼저 해주세요.")
 
         sql = 'UPDATE userinfo SET nyanbit = %s WHERE user_id = %s'
@@ -171,12 +177,15 @@ class Admin(commands.Cog):
         conn.commit()
         conn.close
 
+        self.Logger.info(
+            f"{ctx.author.display_name}님이 {member.display_name}님에게 {cnt}개를 지급했습니다.")
         return await ctx.send(f"[알림] {member.display_name}님에게 {cnt}개를 지급했습니다.")
 
     @give.error
     async def give_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
+            self.Logger.warning(f"{ctx.author.display_name}님은 관리자 권한이 없습니다.")
             await ctx.send('관리자 권한이 없는 유저는 사용할 수 없는 명령어 입니다.')
 
         if isinstance(error, commands.HybridCommandError):
-            print(error)
+            self.Logger.warning(error)
